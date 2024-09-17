@@ -1,17 +1,16 @@
-# Use the official Miniconda3 base image
-FROM continuumio/miniconda3
+# Use the official Anaconda3 base image
+FROM continuumio/anaconda3
 
 # Set the working directory in the container
 WORKDIR /workspace
 
-# Add the conda-forge channel and install dependencies
-RUN conda config --add channels conda-forge \
-    && conda install -y msprime geopandas rasterio bitarray \
+# Install additional dependencies if needed
+RUN conda install -y msprime geopandas rasterio bitarray \
     && pip install NLMpy \
     && pip install geonomics \
     && conda clean -a -y
 
-# Install Jupyter Notebook
+# Install Jupyter Notebook if not already included
 RUN conda install -y notebook \
     && conda clean -a -y
 
