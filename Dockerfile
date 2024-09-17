@@ -6,7 +6,7 @@ WORKDIR /workspace
 
 # Add the conda-forge channel and install dependencies
 RUN conda config --add channels conda-forge \
-    && conda install -y numpy=1.21.5 msprime geopandas rasterio bitarray \
+    && conda install -y numpy msprime geopandas rasterio bitarray \
     && pip install NLMpy \
     && pip install geonomics \
     && conda clean -a -y
