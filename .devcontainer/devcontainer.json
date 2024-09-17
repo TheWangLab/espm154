@@ -17,10 +17,10 @@
     }
   },
   // Forward Jupyter and RStudio ports
-"forwardPorts": [8787],
+"forwardPorts": [8888],
 "portsAttributes": {
-	"8787": {
-		"label": "Jupyternotebook",
+	"8888": {
+		"label": "jupyternotebook",
 		"requireLocalPort": true,
 		"onAutoForward": "ignore"
 	}
