@@ -4,8 +4,9 @@ FROM continuumio/anaconda3
 # Set the working directory in the container
 WORKDIR /workspace
 
-# Install additional dependencies if needed
-RUN conda install -y msprime geopandas rasterio bitarray \
+# Add the conda-forge channel and install dependencies
+RUN conda config --add channels conda-forge \
+    && conda install -y numpy=1.21.5 msprime geopandas rasterio bitarray \
     && pip install NLMpy \
     && pip install geonomics \
     && conda clean -a -y
@@ -19,3 +20,4 @@ EXPOSE 8888
 
 # Start Jupyter Notebook
 CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+
