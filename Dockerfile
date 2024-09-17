@@ -1,5 +1,5 @@
-# Use the official Anaconda3 base image
-FROM continuumio/anaconda3
+# Use the official miniconda base image
+FROM continuumio/miniconda
 
 # Set the working directory in the container
 WORKDIR /workspace
