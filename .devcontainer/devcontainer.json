@@ -15,5 +15,14 @@
         "ms-python.python"
       ]
     }
-  }
+  },
+  // Forward Jupyter and RStudio ports
+	"forwardPorts": [8787],
+	"portsAttributes": {
+		"8787": {
+			"label": "Rstudio",
+			"requireLocalPort": true,
+			"onAutoForward": "ignore"
+		}
+	},
 }
