@@ -1,0 +1,29 @@
+{
+  "image": "ghcr.io/thewanglab/espm154:latest",
+  "hostRequirements": {
+    "cpus": 4
+  },
+  "waitFor": "onCreateCommand",
+  "postCreateCommand": "",
+  "customizations": {
+    "codespaces": {
+      "openFiles": []
+    },
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python"
+      ]
+    }
+  },
+  // Forward Jupyter ports
+  "forwardPorts": [8888],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter Notebook",
+      "requireLocalPort": true,
+      "onAutoForward": "ignore"
+    }
+  }
+}
+
