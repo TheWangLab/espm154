@@ -1,5 +1,5 @@
 {
-  "image": "ghcr.io/anushapb/codespacer:latest",
+  "image": "ghcr.io/thewanglab/espm154:latest",
   "hostRequirements": {
     "cpus": 4
   },
