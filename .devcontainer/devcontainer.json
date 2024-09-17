@@ -16,13 +16,14 @@
       ]
     }
   },
-  // Forward Jupyter and RStudio ports
-"forwardPorts": [8888],
-"portsAttributes": {
-	"8888": {
-		"label": "jupyternotebook",
-		"requireLocalPort": true,
-		"onAutoForward": "ignore"
-	}
+  // Forward Jupyter ports
+  "forwardPorts": [8888],
+  "portsAttributes": {
+    "8888": {
+      "label": "Jupyter Notebook",
+      "requireLocalPort": true,
+      "onAutoForward": "ignore"
+    }
+  }
 }
-}
+
