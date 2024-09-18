@@ -1,13 +1,13 @@
-# Use the official Anaconda3 base image
-FROM continuumio/anaconda3
+# Use the official miniconda base image
+FROM continuumio/miniconda
 
 # Set the working directory in the container
 WORKDIR /workspace
 
 # Add the conda-forge channel and install dependencies
 RUN conda config --add channels conda-forge \
-    && conda install -y numpy=1.21.5 msprime geopandas rasterio bitarray \
-    && pip install NLMpy \
+    && conda install -y numpy msprime geopandas rasterio matplotlib scipy bitarray tskit scikit-learn statsmodels psutil \
+    #&& pip install nlmpy \
     && pip install geonomics \
     && conda clean -a -y
 
