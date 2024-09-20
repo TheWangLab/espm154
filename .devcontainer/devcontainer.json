@@ -1,29 +1,29 @@
 {
-  "image": "ghcr.io/thewanglab/espm154:latest",
-  "hostRequirements": {
-    "cpus": 4
+  "name": "ESPM154 Container",
+  "image": "ghcr.io/anushapb/evodoodle:latest",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "jupyter.notebookFileRoot": "/workspaces/evodoodle",
+    "python.pythonPath": "/opt/conda/bin/python",
+    "python.defaultInterpreterPath": "/opt/conda/bin/python",
+    "jupyter.interactiveWindowMode": "perFile",
+    "jupyter.askForKernelRestart": false,
+    "jupyter.enablePlotViewer": true
   },
-  "waitFor": "onCreateCommand",
-  "postCreateCommand": "",
-  "customizations": {
-    "codespaces": {
-      "openFiles": []
-    },
-    "vscode": {
-      "extensions": [
-        "ms-toolsai.jupyter",
-        "ms-python.python"
-      ]
-    }
+  "features": {
+    "ghcr.io/devcontainers/features/desktop-lite:1": {}
   },
-  // Forward Jupyter ports
-  "forwardPorts": [8888],
+  "forwardPorts": [6080],
   "portsAttributes": {
-    "8888": {
-      "label": "Jupyter Notebook",
-      "requireLocalPort": true,
-      "onAutoForward": "ignore"
+    "6080": {
+      "label": "desktop"
     }
-  }
+  },
+  "runArgs": ["--init", "--shm-size=1g"],
+  "postCreateCommand": "git clone https://github.com/your-username/your-repository.git /workspaces",
+  "extensions": [
+    "ms-python.python",
+    "ms-toolsai.jupyter"
+  ]
 }
 
