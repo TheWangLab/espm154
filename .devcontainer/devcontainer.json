@@ -21,7 +21,7 @@
     }
   },
   "runArgs": ["--init", "--shm-size=1g"],
-  "postCreateCommand": "git clone https://github.com/your-username/your-repository.git /workspaces",
+  "postCreateCommand": "pip install git+https://github.com/AnushaPB/evodoodle.git",
   "extensions": [
     "ms-python.python",
     "ms-toolsai.jupyter"
