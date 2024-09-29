@@ -5,9 +5,9 @@ author: "Anusha Bishop"
 
 # Isolation by Distance (IBD) and Isolation by Environment (IBE)
 
-Today we will be analyzing patterns of IBD and IBE in western fence lizards (*Sceloporus occidentalis*) using Multiple Matrix Regression with Randomization (MMRR) and Generalized Dissimilarity Modelling (GDM). These methods allows us to quantify the relative contributions of IBD and IBE in explaining genetic differentiation. As a reminder, IBD describes the pattern of increasing genetic distance with increasing geographic distance, while IBE describes the pattern of increasing genetic distance with increasing environmental distance.
+Today, we will be analyzing patterns of IBD and IBE in western fence lizards (*Sceloporus occidentalis*) using Multiple Matrix Regression with Randomization (MMRR) and Generalized Dissimilarity Modelling (GDM). These methods allows us to quantify the relative contributions of IBD and IBE in explaining genetic differentiation. As a reminder, IBD describes the pattern of increasing genetic distance with increasing geographic distance, while IBE describes the pattern of increasing genetic distance with increasing environmental distance.
 
-First we need to load some libraries and install the required packages:
+First, we need to load some libraries and install the required packages:
 
 ```{r}
 library(algatr)
