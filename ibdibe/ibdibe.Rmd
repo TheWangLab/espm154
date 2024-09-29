@@ -5,7 +5,7 @@ author: "Anusha Bishop"
 
 # Isolation by Distance (IBD) and Isolation by Environment (IBE)
 
-Today we will be analyzing IBD and IBE in western fence lizards (*Sceloporus occidentalis*) using Multiple Matrix Regression with Randomization (MMRR) and Generalized Dissimilarity Modelling (MMRR). These methods allows us to quantify the relative contributions of IBD and IBE in explaining variation in genetic distances in our data. As a reminder, IBD describes the pattern of increasing genetic differentiation with increasing geographic distance, while IBE describes the pattern of increasing genetic differentiation with increasing environmental distance.
+Today we will be analyzing patterns of IBD and IBE in western fence lizards (*Sceloporus occidentalis*) using Multiple Matrix Regression with Randomization (MMRR) and Generalized Dissimilarity Modelling (GDM). These methods allows us to quantify the relative contributions of IBD and IBE in explaining genetic differentiation. As a reminder, IBD describes the pattern of increasing genetic distance with increasing geographic distance, while IBE describes the pattern of increasing genetic distance with increasing environmental distance.
 
 First we need to load some libraries and install the required packages:
 
@@ -34,9 +34,9 @@ load_algatr_example()
 
 ## Calculating genetic distances
 
-MMRR and GDM require genetic distances as input. We can calculate genetic distances from a VCF file using the `gen_dist()` function. There are several metrics we could use to calculate genetic distance, here we will use euclidean distances. 
+MMRR and GDM require genetic distances as input. We can calculate genetic distances from a VCF file using the `gen_dist()` function. There are several metrics we could use to calculate genetic distance, here we will use Euclidean distances. 
 
-To calculate the euclidean distance, our VCF will be converted to a dosage matrix and then the distance between each pair of individuals will be calculated using the dosage values. Dosage values can be 0, 1, or 2, representing the number of alternate alleles at a given locus. The distance between two individuals is calculated as the square root of the sum of the squared differences in dosage values at each locus.
+To calculate the Euclidean distance, our VCF will be converted to a dosage matrix and then the distance between each pair of individuals will be calculated using the dosage values. Dosage values can be 0, 1, or 2, representing the number of alternate alleles at a given locus. The distance between two individuals is calculated as the square root of the sum of the squared differences in dosage values at each locus.
 
 So, for example, if we have two individuals with the following dosage values at four loci:
 Individual1: 0, 1, 2, 0
@@ -54,12 +54,10 @@ gendist <- gen_dist(liz_vcf, dist_type = "euclidean")
 Note: you will get a warning message because we have missing data in our file which will be imputed. You can ignore this message.
 
 ## MMRR
-Multiple matrix regression with randomization ([Wang 2013](https://onlinelibrary.wiley.com/doi/full/10.1111/evo.12134)) uses linear models to evaluate the effect of geographic and environemntal distance on genetic distance. 
-
-The randomization aspect of MMRR is that significance testing is performed through random permutations of the rows and columns of the dependent matrix (the genetic distances), which is necessary because of the non-independence of values in pairwise distance matrices. Once significance testing is completed, MMRR provides individual regression coefficients and p-values for each dependent variable.
+Multiple matrix regression with randomization (MMRR; [Wang 2013](https://onlinelibrary.wiley.com/doi/full/10.1111/evo.12134)) uses linear models to evaluate the effect of geographic and environmental distance on genetic distance.
 
 ### Preparing data for MMRR
-The inputs for MMRR are a genetic distance matrix (which we calculated before), a geographic distance matrix, and an environmental distance matrix. The geographic distance matrix is calculated based on the coordinates for each sample and the environmental distance matrix is calculated from environmental data at each sampling location. We will calculate euclidean distances as we did for the genetic data.
+The inputs for MMRR are a genetic distance matrix and a geographic distance matrix and/or one or more environmental distance matrices. The geographic distance matrix is calculated based on the coordinates for each sample and the environmental distance matrix is calculated from environmental data at each sampling location. We will use Euclidean distances for geographic distance and environmental distance, as we did for our genetic distances.
 
 ```{r enviro data}
 # Extract values from our environmental raster (CA_env)
@@ -78,7 +76,7 @@ We can run MMRR using the `mmrr_run()` function. The arguments to `mmrr_run()` a
 
 -   `Y`: matrix of genetic distances
 
--   `X`: matrix of environmental distances (including geographic distances) at each sampling coordinate
+-   `X`: list of matrices of predictor distances (environmental and/or geographic distances)
 
 -   `nperm`: number of permutations to perform
 
@@ -86,7 +84,7 @@ We can run MMRR using the `mmrr_run()` function. The arguments to `mmrr_run()` a
   
 -   `model`: whether to run MMRR with all variables included ("full") or with variable selection ("best"). For our example, we will run MMRR with all variables included.
 
-```{r mmrr full}
+```{r mmrr}
 # We set a random seed for reproducibility because MMRR uses random permutations
 set.seed(10)
 
@@ -94,19 +92,19 @@ set.seed(10)
 Y = as.matrix(gendist)
 
 # Run MMRR with all variables
-results_full <- mmrr_run(Y = Y, X = X, nperm = 99, stdz = TRUE, model = "full")
+results <- mmrr_run(Y = Y, X = X, nperm = 99, stdz = TRUE, model = "full")
 ```
 
 ### MMRR Results
-We can then inspect the results of our model by looking at the coefficient dataframe:
+We can then inspect the results of our model by looking at the model statistics:
 
 ```{r stats}
-mmrr_table(results_full, digits = 2, summary_stats = TRUE)
+mmrr_table(results, digits = 2, summary_stats = TRUE)
 ```
 
-The coefficient dataframe shows the coefficients for each variable in the model, as well as the p-values for each coefficient. The first column (var) is the name of the variable, the second column (estimate) is the coefficient, and the third column (p) is the p-value. The fourth and fifth columns are the lower and upper bounds of the 95% confidence interval for the coefficient. The bottom row of the table shows the R-squared value, F statistic, and p-value for the model; you can ignore these values, for now.
+This table shows the coefficients for each variable in the model, as well as the p-values for each coefficient. The first column (var) is the name of the variable, the second column (estimate) is the coefficient, and the third column (p) is the p-value. The fourth and fifth columns are the lower and upper bounds of the 95% confidence interval for the coefficient. The bottom row of the table shows the R-squared value, F statistic, and p-value for the model.
 
-Quesition 2: Based on an alpha level of 0.05 (i.e., p < .05), which variables are significantly associated with genetic distance? For each significant variable, indicate whether the relationship is positive or negative.
+**Question 2: Based on an alpha level of 0.05 (i.e., p < .05), which variables are significantly associated with genetic distance? Which variable has the strongest relationship with genetic distance? For each significant variable, indicate whether the relationship is positive or negative.**
 
 ### Plotting MMRR results
 We can produce several plots to visualize our MMRR. 
@@ -122,7 +120,7 @@ mmrr_plot(Y, X, mod = results_full$mod, plot_type = "vars", stdz = TRUE)
 **Question 4: Does the plot for environmental distance vs genetic distance show evidence of isolation by environment (IBE)? Explain why or why not.**
 
 ## GDM
-Generalized dissimilarity modeling (GDM) is another method that we can use to study IBD and IBE. Similarly to MMRR, GDM regresses geographic and environemntal distances against genetic distances to determine the contributions of IBD and IBE to shaping dissimilarity. However, unlike MMRR, the GDM model allows for nonlinear relationships to be modeled. This can be useful when the relationship between genetic distance and geographic or environmental distance is not linear, as may be the case in nature.
+Generalized dissimilarity modeling (GDM) is another method that we can use to study IBD and IBE. Similarly to MMRR, GDM regresses geographic and environmental distances against genetic distances to determine the contributions of IBD and IBE to shaping dissimilarity. However, unlike MMRR, the GDM model allows us to model nonlinear relationships. This can be useful when the relationship between genetic distance and geographic or environmental distance is not linear, as may be the case in nature.
 
 ### Running GDM
 
@@ -149,18 +147,20 @@ There are no p-values in this table, so we can't determine the significance of t
 **Question 5: Based on the coefficients in the GDM and MMRR table, is IBD or IBE the predominant driver of genetic differentiation in our dataset? Explain your reasoning.**
 
 The plots we get from GDM are a bit different from the MMRR plots. Instead of plotting the raw geographic and genetic distances versus genetic distance, GDM plots "I-splines" which represent non-linear transformations of our variables. The key pieces of information you need to understand to interpret these plots are: 
-1. The relative heights of the I-splines (i.e., the maximum height reached by the line) represents the relative strength of each variable. In our case, the Geographic I-spline is much higher than the environemntal I-splines, suggesting that geographic distance is a stronger predictor of genetic distance than environmental distance.
-2. The shape of the I-splines represents how the turnover in genetic distance changes with increasing geographic or environmental distance. For example, for Geographic distance as you travel from 0 to 3 (note: these are scaled values which is why they don't seem like real distances), the spline is steeper, indicating that genetic distance increases more rapidly with geographic distance at shorter distances than longer distances.
+
+1. The relative heights of the I-splines (i.e., the maximum height reached by the line) represents the relative strength of each variable. In our case, the Geographic I-spline is much higher than the environmental I-splines, suggesting that geographic distance is a stronger predictor of genetic distance than environmental distance.
+
+2. The shape of the I-splines represents how the turnover in genetic distance changes with increasing geographic or environmental distance. For example, for Geographic distance as you travel from 0 to 3 (these are scaled values which is why they don't seem like real distances), the spline is steeper, indicating that genetic distance increases more rapidly with geographic distance at shorter distances than longer distances.
 
 ```{r isplines, fig.width = 5, fig.height = 5}
 gdm_plot_isplines(gdm_full$model, scales = "free_x")
 ```
 
-We can also visualize our GDM results using what we like to call a *rainbow* map (an unoffical term, but accurate). You don't need to worry about how we create this map, all that matters is that *more similar colors indicate more similar composition and more different colors indicate more differentiation* and we map these colors by transforming our environmental rasters using the GDM model.
+We can also visualize our GDM results using what we like to call a *rainbow* map (an unoffical term, but fairly accurate). You don't need to worry about how we create this map, all that matters is that *more similar colors indicate more similar composition* and we map these colors by transforming our environmental rasters using the GDM model.
 
 The `gdm_map()` function will output two plots:
 1. The rainbow map
-2. A plot of the transformed values in PC space. Remember that for PCA plots, points that are closer together are more similar. The arrows show the direction of the environmental gradients or the X/Y direction relative to the PC values; the longer the arrow the more important that variable is in explaining the variation in the data.
+2. A plot of the transformed values in PC space. Remember that for PCA plots, points that are closer together are more similar. The arrows show the direction of the environmental gradients or the X/Y coordinate direction relative to the PC values; the longer the arrow the more important that variable is in explaining the variation in the data.
 
 ```{r GDM plots, fig.width = 5, fig.height = 5, results='hide'}
 map <- gdm_map(gdm_full$model, CA_env, liz_coords)
@@ -173,24 +173,26 @@ For those of you who are curious, this map is created by:
 
 **Question 6: Do you see any patterns in the rainbow map that you can tie to known geographic features of California? To help you answer this question, check out this guide to the California Geomorphic Provinces from the California Department of Conservation: https://www.conservation.ca.gov/cgs/Documents/Publications/CGS-Notes/CGS-Note-36.pdf**
 
-## Additional documentation and citations for MMRR
-
+## Additional documentation and citations for MMRR and GDM
 ------------------------------------------------------------------------
 
-|                        | Citation/URL                                                                                     | Details                      |
-|-----------------|------------------------------|-------------------------|
-| Manuscript with method |  [Wang 2013](https://onlinelibrary.wiley.com/doi/full/10.1111/evo.12134)                         | Paper describing MMRR method |
-| Associated code        | [MMRR tutorial](https://nature.berkeley.edu/wanglab/wp-content/uploads/2019/09/MMRRtutorial.zip) | Walkthrough of MMRR          |
+1. **Manuscript with method**: [Wang 2013](https://onlinelibrary.wiley.com/doi/full/10.1111/evo.12134)  
+   Paper describing MMRR method
 
+2. **Associated code**: [MMRR tutorial](https://nature.berkeley.edu/wanglab/wp-content/uploads/2019/09/MMRRtutorial.zip)  
+   Walkthrough of MMRR
 
-## Additional documentation and citations for GDM
+3. **Associated code**: [Fitzpatrick et al. 2022](https://cran.r-project.org/web/packages/gdm/gdm.pdf)  
+   algatr uses the `gdm()` package; manual contains walkthroughs
 
-------------------------------------------------------------------------
+4. **Associated literature**: [Ferrier et al. 2007](https://onlinelibrary.wiley.com/doi/10.1111/j.1472-4642.2007.00341.x)  
+   Paper describing basic use of GDM
 
-|                       | Citation/URL                                                                                                                                                                                     | Details                                                       |
-|------------------|-----------------------------|-------------------------|
-| Associated code       | [Fitzpatrick et al. 2022](https://cran.r-project.org/web/packages/gdm/gdm.pdf)                                                                                                                   | algatr uses the `gdm()` package; manual contains walkthroughs |
-| Associated literature | [Ferrier et al. 2007](https://onlinelibrary.wiley.com/doi/10.1111/j.1472-4642.2007.00341.x)                                                                                                      | Paper describing basic use of GDM                             |
-| Associated literature | [Freedman et al. 2010](https://onlinelibrary.wiley.com/doi/10.1111/j.1365-294X.2010.04684.x)                                                                                                     | Classic example of using GDM                                  |
-| Associated literature | [Fitzpatrick & Keller 2015](https://onlinelibrary.wiley.com/doi/abs/10.1111/ele.12376#:~:text=Community%2Dlevel%20modelling%20of%20genomic,assessments%20of%20climate%20change%20vulnerability.) | Perspective on using GDM                                      |
-| Associated literature | [Mokany et al. 2022](https://onlinelibrary.wiley.com/doi/full/10.1111/geb.13459)                                                                                                                 | Perspective on using GDM                                      |
+5. **Associated literature**: [Freedman et al. 2010](https://onlinelibrary.wiley.com/doi/10.1111/j.1365-294X.2010.04684.x)  
+   Classic example of using GDM
+
+6. **Associated literature**: [Fitzpatrick & Keller 2015](https://onlinelibrary.wiley.com/doi/abs/10.1111/ele.12376#:~:text=Community%2Dlevel%20modelling%20of%20genomic,assessments%20of%20climate%20change%20vulnerability.)  
+   Perspective on using GDM
+
+7. **Associated literature**: [Mokany et al. 2022](https://onlinelibrary.wiley.com/doi/full/10.1111/geb.13459)  
+   Perspective on using GDM
