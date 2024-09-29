@@ -196,12 +196,16 @@ QUESTION 4: What are some geographic features of California that might affect th
 You can also go on google maps and look at the terrain of California to get an idea of what the landscape looks like.
 
 ## Additional documentation and citations
-
 ------------------------------------------------------------------------
 
-|                       | Citation/URL                                                                                                                                                                      | Details                                         |
-|-------------------|-----------------------------|-------------------------|
-| Main literature       | [Caye et al. 2016](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.12471); vignette available [here](https://bcm-uga.github.io/TESS3_encho_sen/articles/main-vignette.html) | Citation for TESS3                              |
-| Associated literature | [François et al. 2006](https://academic.oup.com/genetics/article/174/2/805/6061653?login=false)                                                                                   | Details on algorithm used by TESS               |
-| Associated literature | [Chen et al. 2007](https://onlinelibrary.wiley.com/doi/10.1111/j.1471-8286.2007.01769.x)                                                                                          | Details on algorithm used by TESS               |
-| Blog post             | [Automatic K selection](https://chazhyseni.github.io/NALgen/post/determining_bestk/)       
+1. **Main literature**: [Caye et al. 2016](https://onlinelibrary.wiley.com/doi/10.1111/1755-0998.12471); vignette available [here](https://bcm-uga.github.io/TESS3_encho_sen/articles/main-vignette.html)  
+   Citation for TESS3
+
+2. **Associated literature**: [François et al. 2006](https://academic.oup.com/genetics/article/174/2/805/6061653?login=false)  
+   Details on algorithm used by TESS
+
+3. **Associated literature**: [Chen et al. 2007](https://onlinelibrary.wiley.com/doi/10.1111/j.1471-8286.2007.01769.x)  
+   Details on algorithm used by TESS
+
+4. **Blog post**: [Automatic K selection](https://chazhyseni.github.io/NALgen/post/determining_bestk/)  
+   Blog post on determining the best K
