@@ -79,7 +79,7 @@ A crucial part of population structure analysis is choosing the best number of c
 
 Here, we test K values 1 through 10. The `K_selection` argument specifies the method for selecting the best K value; we will be performing manual K selection. The `ploidy` argument specifies the ploidy of the data, which is 2 for our diploids.
 
-**When we run the function, a cross-validation plot will appear and we will be prompted to select the best K value based on the cross-validation scores by entering a number in the console. If a plot does not appear, click on the settings cog (to the right of the "knit" button) and select `Chunk output in Console`**
+**When we run the function, a cross-validation plot will appear and we will be prompted to select the best K value based on the cross-validation scores by entering a number in the console. If a plot does not appear, click on the settings cog (to the right of the "knit" button) and select `Chunk output in Console` (you can switch it back to `Chunk output Inline` after you run the code chunk below).
 
 How do you pick the best K-value? The cross-validation score is a measure of how well the model predicts the data. The lower the cross-validation score, the better the model is at predicting the data. However, as you will see, the cross-validation score tends to decrease as K increases because using more clusters to describe your sample often results in lower cross-validation error, so you want to pick the K value where the cross-validation score starts to level off. This is known as the "elbow" of the cross-validation plot. 
 
