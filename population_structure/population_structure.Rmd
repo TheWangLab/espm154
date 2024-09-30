@@ -32,6 +32,7 @@ library(sf)
 
 # Colorblind friendly palette from https://personal.sron.nl/~pault/#sec:qualitative
 pal <- function(n = 7){c('#EE7733', '#33BBEE', '#009988', '#EE3377', '#CC3311', '#0077BB', '#BBBBBB')[1:n]}
+ggpal <-  scale_fill_manual(values = pal())
 ```
 
 Let's also load our data, which we will describe in more detail later:
@@ -109,11 +110,11 @@ qmat6 <- qmatrix(tess_result, K = 6)
 We can visualize these Q values using a bar plot. The bar plot will show the proportion of ancestry assigned to each individual for each cluster (K value). Each bar represent an individual and the proportion of each color in the bar represents the proportion of ancestry for each individual. Let's look at the bar plots for K = 2 through K = 6:
 
 ```{r bar plots, fig.width = 10, fig.height = 10}
-tess_barplot(qmat2, col_pal = pal)
-tess_barplot(qmat3, col_pal = pal)
-tess_barplot(qmat4, col_pal = pal)
-tess_barplot(qmat5, col_pal = pal)
-tess_barplot(qmat6, col_pal = pal)
+tess_ggbarplot(qmat2, ggplot_fill = ggpal)
+tess_ggbarplot(qmat3, ggplot_fill = ggpal)
+tess_ggbarplot(qmat4, ggplot_fill = ggpal)
+tess_ggbarplot(qmat5, ggplot_fill = ggpal)
+tess_ggbarplot(qmat6, ggplot_fill = ggpal)
 ```
 
 We can use the Q values to assign the individuals to clusters. We can do this by assigning each individual to the cluster with the highest Q value. Let's assign the individuals to clusters for K = 3:
@@ -192,7 +193,7 @@ krig_admix <- tess_krig(qmat3, coords_proj, krig_raster)
 Now, let's explore how Q values (ancestry coefficients) are mapped. The `tess_ggplot()` function will take in the kriged admixture values and, using the "maxQ" option, we can plot only the maximum Q value for each cell.
 
 ```{r basic ggplot, fig.width = 5, fig.height = 5, fig.align = 'center'}
-tess_ggplot(krig_admix, plot_method = "maxQ", ggplot_fill = scale_fill_manual(values = pal()))
+tess_ggplot(krig_admix, plot_method = "maxQ", ggplot_fill = ggpal)
 ```
 
 QUESTION 4: What are some geographic features of California that might affect the population structure of western fence lizards? Do you see any patterns in the ancestry coefficients that might be related to these features? To help you answer this question, check out this guide to the California Geomorphic Provinces from the California Department of Conservation: https://www.conservation.ca.gov/cgs/Documents/Publications/CGS-Notes/CGS-Note-36.pdf
