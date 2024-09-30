@@ -29,6 +29,9 @@ library(fields)
 library(automap)
 library(cowplot)
 library(sf)
+
+# Colorblind friendly palette from https://personal.sron.nl/~pault/#sec:qualitative
+pal <- function(n = 7){c('#EE7733', '#33BBEE', '#009988', '#EE3377', '#CC3311', '#0077BB', '#BBBBBB')[1:n]}
 ```
 
 Let's also load our data, which we will describe in more detail later:
@@ -75,13 +78,13 @@ A crucial part of population structure analysis is choosing the best number of c
 
 Here, we test K values 1 through 10. The `K_selection` argument specifies the method for selecting the best K value; we will be performing manual K selection. The `ploidy` argument specifies the ploidy of the data, which is 2 for our diploids.
 
-**When we run the function, a cross-validation plot will appear and we will be prompted to select the best K value based on the cross-validation scores by entering a number in the console. The function will then return the TESS results for the best K value and the results from the cross-validation analysis.**
+**When we run the function, a cross-validation plot will appear and we will be prompted to select the best K value based on the cross-validation scores by entering a number in the console. If a plot does not appear, click on the settings cog (to the right of the "knit" button) and select `Chunk output in Console`**
 
-How do you pick the best K-value? The cross-validation score is a measure of how well the model predicts the data. The lower the cross-validation score, the better the model is at predicting the data. However, as you will see, the cross-validation score tends to decrease as K increases becaues using more clusters to describe your sample often results in lower cross-validation error, so you want to pick the K value where the cross-validation score starts to level off. This is known as the "elbow" of the cross-validation plot. 
+How do you pick the best K-value? The cross-validation score is a measure of how well the model predicts the data. The lower the cross-validation score, the better the model is at predicting the data. However, as you will see, the cross-validation score tends to decrease as K increases because using more clusters to describe your sample often results in lower cross-validation error, so you want to pick the K value where the cross-validation score starts to level off. This is known as the "elbow" of the cross-validation plot. 
 
-In this plot, there is unfortunately not a clear elbow. This means that we will need to evaluate multiple K values and use other information for our population structure analysis. For now, let's select K = 3. Select 3 by entering "3" in the console when prompted.
+In this plot, there is unfortunately not a clear elbow. This means that we will need to evaluate multiple K values and use other information for our population structure analysis. For now, let's select K = 3. Select 3 by entering "3" in the console when prompted. 
 
-```{r auto K selection, message = FALSE, fig.align = 'center'}
+```{r auto K selection, message = FALSE, fig.align = 'center', eval = FALSE}
 tess_test <- tess_ktest(liz_dosage, liz_coords, Kvals = 1:10, K_selection = "manual", ploidy = 2)
 ```
 
@@ -105,12 +108,12 @@ qmat6 <- qmatrix(tess_result, K = 6)
 
 We can visualize these Q values using a bar plot. The bar plot will show the proportion of ancestry assigned to each individual for each cluster (K value). Each bar represent an individual and the proportion of each color in the bar represents the proportion of ancestry for each individual. Let's look at the bar plots for K = 2 through K = 6:
 
-```{r bar plots}
-tess_barplot(qmat2)
-tess_barplot(qmat3)
-tess_barplot(qmat4)
-tess_barplot(qmat5)
-tess_barplot(qmat6)
+```{r bar plots, fig.width = 10, fig.height = 10}
+tess_barplot(qmat2, col_pal = pal)
+tess_barplot(qmat3, col_pal = pal)
+tess_barplot(qmat4, col_pal = pal)
+tess_barplot(qmat5, col_pal = pal)
+tess_barplot(qmat6, col_pal = pal)
 ```
 
 We can use the Q values to assign the individuals to clusters. We can do this by assigning each individual to the cluster with the highest Q value. Let's assign the individuals to clusters for K = 3:
@@ -123,10 +126,10 @@ We can then plot the individuals on a map and color them by cluster. Let's plot 
 
 ```{r map}
 ggplot() +
-  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k3)), size = 2) +
+  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k3), pch = factor(clusters_k3)), size = 2) +
   theme_minimal() +
-  labs(title = "K = 3", color = "Cluster") +
-  scale_color_viridis_d(option = "turbo") +
+  labs(title = "K = 3", color = "Cluster", pch = "Cluster") +
+  scale_color_manual(values = pal()) +
   coord_quickmap()
 ```
 
@@ -137,24 +140,24 @@ clusters_k5 <- apply(qmat5, 1, which.max)
 clusters_k6 <- apply(qmat6, 1, which.max)
 
 ggplot() +
-  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k4)), size = 2) +
+  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k4), pch = factor(clusters_k4)), size = 3) +
   theme_minimal() +
-  labs(title = "K = 4", color = "Cluster") +
-  scale_color_viridis_d(option = "turbo") +
+  labs(title = "K = 4", color = "Cluster", pch = "Cluster") +
+  scale_color_manual(values = pal()) +
   coord_quickmap()
 
 ggplot() +
-  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k5)), size = 2) +
+  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k5), pch = factor(clusters_k5)), size = 3) +
   theme_minimal() +
-  labs(title = "K = 5", color = "Cluster") +
-  scale_color_viridis_d(option = "turbo") +
+  labs(title = "K = 5", color = "Cluster", pch = "Cluster") +
+  scale_color_manual(values = pal()) +
   coord_quickmap()
 
 ggplot() +
-  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k6)), size = 2) +
+  geom_point(data = liz_coords, aes(x = x, y = y, color = factor(clusters_k6), pch = factor(clusters_k6)), size = 3) +
   theme_minimal() +
-  labs(title = "K = 6", color = "Cluster") +
-  scale_color_viridis_d(option = "turbo") +
+  labs(title = "K = 6", color = "Cluster", pch = "Cluster") +
+  scale_color_manual(values = pal()) +
   coord_quickmap()
 ```
 
@@ -189,7 +192,7 @@ krig_admix <- tess_krig(qmat3, coords_proj, krig_raster)
 Now, let's explore how Q values (ancestry coefficients) are mapped. The `tess_ggplot()` function will take in the kriged admixture values and, using the "maxQ" option, we can plot only the maximum Q value for each cell.
 
 ```{r basic ggplot, fig.width = 5, fig.height = 5, fig.align = 'center'}
-tess_ggplot(krig_admix, plot_method = "maxQ")
+tess_ggplot(krig_admix, plot_method = "maxQ", ggplot_fill = scale_fill_manual(values = pal()))
 ```
 
 QUESTION 4: What are some geographic features of California that might affect the population structure of western fence lizards? Do you see any patterns in the ancestry coefficients that might be related to these features? To help you answer this question, check out this guide to the California Geomorphic Provinces from the California Department of Conservation: https://www.conservation.ca.gov/cgs/Documents/Publications/CGS-Notes/CGS-Note-36.pdf
