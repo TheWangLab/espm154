@@ -24,7 +24,8 @@
   "postCreateCommand": "pip install git+https://github.com/AnushaPB/evodoodle.git",
   "extensions": [
     "ms-python.python",
-    "ms-toolsai.jupyter"
+    "ms-toolsai.jupyter",
+    "vscode-pdf"
   ]
 }
 
