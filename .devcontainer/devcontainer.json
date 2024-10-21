@@ -20,7 +20,11 @@
       "label": "desktop"
     }
   },
-  "runArgs": ["--init", "--shm-size=1g"],
+  "runArgs": [
+    "--init",
+    "--shm-size=1g",
+    "--memory=16g"
+  ],
   "postCreateCommand": "pip install git+https://github.com/AnushaPB/evodoodle.git",
   "extensions": [
     "ms-python.python",
