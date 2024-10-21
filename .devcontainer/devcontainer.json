@@ -11,6 +11,10 @@
     "jupyter.enablePlotViewer": true,
     "editor.wordWrap": "on"
   },
+  "hostRequirements": {
+   "cpus": 4,
+   "memory": "16gb"
+  },
   "features": {
     "ghcr.io/devcontainers/features/desktop-lite:1": {}
   },
@@ -22,8 +26,7 @@
   },
   "runArgs": [
     "--init",
-    "--shm-size=1g",
-    "--memory=16g"
+    "--shm-size=1g"
   ],
   "postCreateCommand": "pip install git+https://github.com/AnushaPB/evodoodle.git",
   "extensions": [
