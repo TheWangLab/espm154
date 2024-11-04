@@ -3,21 +3,20 @@ title: "RDA"
 author: "Anusha Bishop"
 ---
 
-Modified material from the [algatr]() package vignettes (Chambers et al. 2024)
-
 # Introduction to Genotype-Environment Association (GEA) analysis
 
-Genotype-environment association (GEA) analysis is a powerful tool for identifying loci that may be driving local environemental adaptation. As their name suggest, GEA methods identify candidate loci based on significant associations between genotypes and environment variables (e.g., temperature). One popular method for GEA analysis is called redundancy analysis (RDA), which uses constrained ordination to detect loci. It does so by combining linear regression (in which response variables are genotypes and  explanatory variables are environmental data) with ordination (a PCA). In this lab, we will walk through how to perform an RDA analysis using the `algatr` package in R and how to use Genome Browswer to identify and research genes related to our candidate loci.
+Genotype-environment association (GEA) analysis is a powerful tool for identifying loci that may be driving local environemental adaptation. As the name suggest, GEA methods identify candidate loci based on significant associations between genotypes (i.e., allele dosages or frequencies) and environment variables (e.g., temperature). One popular method for GEA analysis is called redundancy analysis (RDA), which uses constrained ordination to detect loci. Constrained ordination works by combining linear regression (in which response variables are genotypes and  explanatory variables are environmental data) with ordination (a PCA). In this lab, we will walk through how to perform an RDA analysis using the `algatr` package in R and how to use Genome Browser to identify and research genes related to our candidate loci.
 
 Helpful terms to know:
-1. Loci - any location in the genome. In this context, the loci we are interested in are Single Nucleotide Polymorphisms (SNPs). 
-2. Candidate loci - loci that are significantly associated with environmental variables, sometimes called "outlier loci"
+1. Loci - locations in the genome. In this context, the loci we are interested in are Single Nucleotide Polymorphisms (SNPs). 
+2. Candidate loci - loci that are significantly associated with environmental variables, sometimes called "outlier loci". You may also hear them referred to as "adaptive loci" in other contexts, however, just because a locus is an outlier does not necessarily mean it is adaptive.
 
-Click the link below to see an overview of the RDA method from ([Capblancq & Forester 2021](https://doi.org/10.1111/2041-210X.13722)): https://besjournals.onlinelibrary.wiley.com/cms/asset/83a47a70-aa35-4ced-9d7e-be5fad3693db/mee313722-fig-0004-m.png
+Click the link below to see an overview of the RDA method from ([Capblancq & Forester 2021](https://doi.org/10.1111/2041-210X.13722)):
+https://besjournals.onlinelibrary.wiley.com/cms/asset/83a47a70-aa35-4ced-9d7e-be5fad3693db/mee313722-fig-0004-m.png
 
 ## Load required packages and data
 
-First, we need to load the `algatr` package and install any required packages. We also need to load other packages that will be used in this analysis, including `dplyr`, `raster`, and `vegan`.
+First, we need to load the `algatr` package and install any required packages. We also need to load other packages that will be used in this analysis.
 
 ```{r}
 library(algatr)
@@ -41,11 +40,16 @@ library(ggplot2)
 
 ## Processing data
 
-The dataset we will be working with today is for two widespread montane bumble bee species, Bombus vosnesenskii and Bombus vancouverensis, from Jackson et al. (2020; https://doi.org/10.1111/mec.15376). In the original Jackson et al. study, they identified candidate loci associated with temperature and precipitation across the species' ranges and linked these loci to potential gene functions. We will be using the same dataset to demonstrate how to perform an RDA analysis. We will also use Genome Browser to explore genes related to the loci and infer potential gene functions.
+The dataset we will be working with today is for two widespread montane bumble bee species, Bombus vosnesenskii and Bombus vancouverensis, from a paper by Jackson et al. (2020; https://doi.org/10.1111/mec.15376). Bumble bees are a great system for landscape genomic analysis as climate is important for multiple aspects of their biology and they experience substantial variation in climatic conditions across their large ranges. In the original Jackson et al. study, they identified candidate loci associated with temperature and precipitation across the species' ranges and linked these loci to potential gene functions. We will be using the same dataset to run our own RDA analysis. We will also use Genome Browser to explore genes that the loci fall within and infer potential gene functions.
 
 ### Genetic data
 
-Running an RDA requires two data files for input: a genotype dosage matrix (the `gen` argument) and the environmental values extracted at sampling coordinates (the `env` argument). Let's first convert our vcf to a dosage matrix using the `vcf_to_dosage()` function.
+Running an RDA requires two data files for input:
+
+1. A genotype dosage matrix (rows: individuals, columns: SNPs)
+2. Environmental values extracted at sampling coordinates (rows: individuals, columns: environmental variables)
+  
+Let's first convert our vcf to a dosage matrix using the `vcf_to_dosage()` function.
 
 ```{r gen data, warning = FALSE}
 # Load the vcf file for B. vosnesenskii
@@ -60,7 +64,7 @@ vos_gen <- simple_impute(vos_gen)
 
 ### Environmental data
 
-Now, let's get our environmental data. For our environmental data we will be using bioclimatic data from WorldClim (https://www.worldclim.org/). These variables provide summaries of temperature and precipitation. There are 19 bioclimatic variables in total, but we will only be using a subset of these variables for our analysis.
+Now, let's get our environmental data. For our environmental data we will be using bioclimatic data from WorldClim (https://www.worldclim.org/). These variables provide various summaries of temperature and precipitation. There are 19 bioclimatic variables in total, but we will only be using a subset of these variables for our analysis.
 
 The bioclimatic variables we will be using today are:
 1. Annual mean temperature (bio1)
@@ -70,6 +74,8 @@ The bioclimatic variables we will be using today are:
 5. Min temperature of coldest month (bio6)
 6. Precipitation of driest month (bio14)
 7. Precipitation of wettest month (bio13)
+
+Think about what each of these variables might represent and how they could be important for bumble bee biology.
    
 ```{r}
 bio <- worldclim_global(var="bio", path=tempdir(), res = 2.5)
@@ -80,11 +86,11 @@ bio <- bio[[c(1, 12, 3, 5, 6, 14, 13)]]
 # Rename them to be more informative
 names(bio) <- c("Annual_Mean_Temperature", "Annual_Precipitation", "Isothermality", "Max_Temperature_of_Warmest_Month", "Min_Temperature_of_Coldest_Month", "Precipitation_of_Driest_Month", "Precipitation_of_Wettest_Month")
 
-# Plot our raster
+# Plot our raster stack
 plot(bio)
 ```
 
-Next, we can extract the environmental values at our sampling coordinates from our environmental rasters. We also need to standardize environmental variables. This is particularly important if we are using (for example) bioclimatic variables as input, as units of measurement are completely different (e.g., mm for precipitation vs. degrees Celsius for temperature). To do so, we'll use the `scale()` function.
+Next, we can extract the environmental values at our sampling coordinates from our environmental rasters. We also need to standardize the environmental variables by scaling them to have the same mean and variance. This is particularly important if we are using bioclimatic variables as input, as units of measurement are completely different (e.g., mm for precipitation vs. degrees Celsius for temperature). To do so, we'll use the `scale()` function.
 
 ```{r enviro data}
 # Get coordinates
@@ -94,14 +100,14 @@ vos_coords <-
   # crs = 4326 is the WGS84 coordinate system (latitude and longitude)
   st_as_sf(coords = c("lon", "lat"), crs = 4326)
 
-# Extract environmental vars
+# Extract environmental values at sampling coordinates
 vos_env <- raster::extract(bio, vos_coords, ID = FALSE)
 
 # Standardize environmental variables and make into dataframe
 vos_env <- scale(vos_env, center = TRUE, scale = TRUE)
 vos_env <- data.frame(vos_env)
 
-# We can then plot our coordinates, colored by an environmental variable, to get a sense of the spatial scale of our data
+# We can then plot our coordinates, colored by an environmental variable (in this case annual precipitation), to get a sense of the spatial scale of our data
 ggplot(vos_coords) +
   borders("state", fill = "gray90") +
   geom_sf(aes(col = vos_env$Annual_Precipitation), cex = 3, alpha = 0.5) +
@@ -114,8 +120,9 @@ ggplot(vos_coords) +
 ## Running RDA
 
 Now let's run RDA using the genotype matrix and the environmental dataframe we created using the `rda_run()` function:
+
 ```{r full model, warning = FALSE, message = FALSE}
-vos_mod <- rda_run(vos_gen, vos_env)
+vos_mod <- rda_run(gen = vos_gen, env = vos_env)
 ```
 
 The resulting object is large, containing 12 elements relevant to the RDA. Let's take a look at what function was called. We can see that we have modeled gen (genotype) as a function (~) of our environmental variables.
@@ -140,15 +147,17 @@ length(vos_outliers$rda_snps)
 
 ------------------------------------------------------------------------
 
-RDA results are often visualized using a **biplot**. These plots depict how our SNPs are associated with our environmental variables. In these plots, **points represent our SNPs** and arrows represent our environmental variables.  
+RDA results are often visualized using a **biplot**. These plots depict how our SNPs are associated with our environmental variables. In these plots, **points represent our SNPs** and **arrows represent our environmental variables**.  
 
-The direction of the arrows shows how environmental variables are associated with genetic variation. Arrows pointing in the same  direction are positively correlated environmental variables and those pointing in opposite directions are negatively correlated. Arrows perpindicular to each other are uncorrelated. 
+The direction of the arrows shows how the environmental variables are associated with genetic variation. Arrows pointing in the same direction are positively correlated environmental variables and those pointing in opposite directions are negatively correlated.
 
-**If a SNPs is far along an environmental arrow's direction, that SNP is strongly associated with that environmental factor.** Our outlier SNPs are highlighted in orange; you can see that these SNPs fall far along the arrows representing our environmental variables.
+**If a SNPs is far along an environmental arrow's direction, that SNP is strongly associated with that environmental factor.** Our outlier SNPs are highlighted in orange.
 
 The axes of this plot, RDA1 and RDA2, can be thought of in the same way as PCA axes. They represent the axes of greatest genetic variation that are associated with our environmental variables.
 
 ```{r biplot}
+# Here we plot RDA axes 1 and 2
+# This is similar to plotting two PC axes
 rda_plot(vos_mod, vos_outliers$rda_snps, biplot_axes = c(1, 2), rdaplot = TRUE, manhattan = FALSE)
 ```
 
@@ -164,7 +173,7 @@ rda_plot(vos_mod, vos_outliers$rda_snps, vos_outliers$pvalues, rdaplot = FALSE, 
 
 ### Identifying environmental associations
 
-Now that we've identified outlier loci, we can identify which environmental variables they are correlated with. To do so, we can run a correlation test of each SNP. The correlation coefficient (r) is a measure of the correlation between the *dosage values of that SNP and the environmental values*; this means that if the correlation coefficient is positive, the alternative allele is associated with higher environmental values and the reference allele is associate with lower environmental values, and if it is negative, the reference allele is associated with higher environmental values and the alternative allele is associated with lower environmental values. The direction of the correlation is not very meaningful by itself, but keep it in mind to avoid misenterpreting the correlation results.
+Now that we've identified outlier loci, we can identify which environmental variables they are correlated with. To do so, we can run a correlation test for each SNP. The correlation coefficient (r) is a measure of the correlation between the *dosage values for that SNP and the environmental values*; this means that if the correlation coefficient is positive, the alternative allele is associated with higher environmental values and the reference allele is associate with lower environmental values, and if it is negative, the reference allele is associated with higher environmental values and the alternative allele is associated with lower environmental values. The direction of the correlation is not very meaningful by itself, but keep it in mind to avoid misenterpreting the correlation results.
 
 ```{r simple results}
 # Extract genotypes for outlier SNPs
@@ -189,12 +198,12 @@ In the code chunk below, make a table for one of the other environmental variabl
 
 ### Using Genome Browser to explore candidate loci
 
-The output of RDA by itself is not very informative; RDA only provides us with a list of SNP IDs that are significantly associated with environmental variables. To learn more about these SNPs, we can use the UCSC Genome Browser to explore the genes that these SNPs are located in.
+The output of RDA by itself is not very informative; RDA only provides us with a list of outlier SNP IDs. To learn more about these SNPs, we can use the UCSC Genome Browser to explore the genes that these SNPs are located in.
 
 The genomic data used in this study was aligned to the reference genome for Bombus impatiens, a close relative of our study species. Follow the link below to oppen the UCSC Genome Browser for the Bombus impatiens genome:
 https://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2793425_GCF_000188095.3&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=NT_176521.1%3A1822030%2D1832030&hgsid=2371735563_SdPIpLrHfSt0skdzRwH0qi6m9NIu
 
-In the Genome Browser, you can search for the SNP IDs that you identified as outliers in the RDA analysis. You will have to slightly modify the SNP IDs to match the format used in the Genome Browser. For example, if the SNP ID is "NT_176521.1_514070", you would search for "NT_176521.1:514070" in the Genome Browser.
+In the Genome Browser, you can search for the SNP IDs that you identified as outliers in the RDA analysis. You will have to slightly modify the SNP IDs to match the format used in the Genome Browser by replacing the underscore with a colon. For example, if the SNP ID is "NT_176521.1_514070", you would search for "NT_176521.1:514070" in the Genome Browser.
 
 Once you search for the SNP ID, the Genome Browser will show you the location of the SNP in the genome. You can then identify the genes that are located near the SNP. The NCBI RefSeq genes will be colored in blue. When you click on the gene, you will get a pop-up window with information about the gene; click on the link next to "Primary identifier for gene" and you will be taken to the NCBI page for that gene, which may give you more information about the gene's function.
 
@@ -204,7 +213,7 @@ Once you search for the SNP ID, the Genome Browser will show you the location of
 
 ## Run RDA on Bombus vancouverensis
 
-Now that we have run RDA on Bombus vosnesenskii, you can run RDA on Bombus vancouverensis. The data is read in for you below. Copy and paste the code from above to run RDA on Bombus vancouverensis.
+Now that we have run RDA on Bombus vosnesenskii, you can run RDA on Bombus vancouverensis. The data is alread loaded for you below. Copy and paste the code from above to run RDA on Bombus vancouverensis.
 
 ```{r}
 # Load the vcf file for B. vancouverensis
@@ -228,7 +237,7 @@ Here are the steps you will need to follow:
 
 ## Comparing results between species
 
-A major question in landscape genetics is whether similar sets of genes are associated with environmental adaptation across different species. This is important because it tells about the predictability and repeatiblity of evolution across the tree of life. Now, that you have run RDA on both Bombus vosnesenskii and Bombus vancouverensis, you can compare the results to see if the same loci are associated with climatic variables in both species.
+A major question in landscape genetics is whether similar sets of genes are associated with environmental adaptation across different species. This is important because it tells us about the predictability and repeatiblity of evolution across the tree of life. Now, that you have run RDA on both Bombus vosnesenskii and Bombus vancouverensis, you can compare the results to see if the same loci are associated with climatic variables in both species.
 
 ```{r}
 # Note: you will need to create the van_outliers object in your code above
@@ -246,6 +255,8 @@ Use the Genome Browser to explore any SNPs that are shared between the two speci
 ---------------------------------------------
   **Use your results to answer Question 4**  
 ---------------------------------------------
+
+This lab is based on material from the [algatr](https://thewanglab.github.io/algatr/articles/RDA_vignette.html) package vignettes
 
 ## Documentation and citations
 
