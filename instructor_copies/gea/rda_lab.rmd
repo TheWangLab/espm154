@@ -48,7 +48,7 @@ Running an RDA requires two data files for input: a genotype dosage matrix (the 
 
 ```{r gen data, warning = FALSE}
 # Load the vcf file for B. vosnesenskii
-vos_vcf <- read.vcfR("data/vos_maf05.eff.vcf")
+vos_vcf <- read.vcfR("data/vos.vcf.gz")
 
 # Convert from vcf to dosage matrix:
 vos_gen <- vcf_to_dosage(vos_vcf)
@@ -198,9 +198,9 @@ Now that we have run RDA on Bombus vosnesenskii, you can run RDA on Bombus vanco
 
 ```{r}
 # Load the vcf file for B. vancouverensis
-van_vcf <- read.vcfR("data/bif_maf05.eff.vcf")
+van_vcf <- read.vcfR("data/van.vcf.gz")
 van_coords <- 
-  read.csv("data/bif_coords.csv") %>%
+  read.csv("data/van_coords.csv") %>%
   st_as_sf(coords = c("lon", "lat"), crs = 4326)
 ```
 
@@ -211,7 +211,6 @@ Here are the steps you will need to follow:
 4. Identify outlier SNPs (use the `rda_getoutliers()` function)
 5. Visualize the results (use the `rda_plot()` function)
 6. Identify environmental associations (use the `rda_cor()` and `rda_table()` functions)
-7. Use the Genome Browser to explore candidate loci (use the UCSC Genome Browser link provided above)
 
 ---------------------------------------------
   **Use your results to answer Question 3**  
