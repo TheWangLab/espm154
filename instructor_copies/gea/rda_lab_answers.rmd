@@ -1,0 +1,293 @@
+---
+title: "RDA"
+author: "Anusha Bishop"
+---
+
+Modified material from the [algatr]() package vignettes (Chambers et al. 2024)
+
+# Introduction to Genotype-Environment Association (GEA) analysis
+
+Genotype-environment association (GEA) analysis is a powerful tool for identifying loci that may be driving local environemental adaptation. As their name suggest, GEA methods identify candidate loci based on significant associations between genotypes and environment variables (e.g., temperature). One popular method for GEA analysis is called redundancy analysis (RDA), which uses constrained ordination to detect loci. It does so by combining linear regression (in which response variables are genotypes and  explanatory variables are environmental data) with ordination (a PCA). In this lab, we will walk through how to perform an RDA analysis using the `algatr` package in R and how to use Genome Browswer to identify and research genes related to our candidate loci.
+
+Helpful terms to know:
+1. Loci - any location in the genome. In this context, the loci we are interested in are Single Nucleotide Polymorphisms (SNPs). 
+2. Candidate loci - loci that are significantly associated with environmental variables, sometimes called "outlier loci"
+
+Click the link below to see an overview of the RDA method from ([Capblancq & Forester 2021](https://doi.org/10.1111/2041-210X.13722)): https://besjournals.onlinelibrary.wiley.com/cms/asset/83a47a70-aa35-4ced-9d7e-be5fad3693db/mee313722-fig-0004-m.png
+
+## Load required packages and data
+
+First, we need to load the `algatr` package and install any required packages. We also need to load other packages that will be used in this analysis, including `dplyr`, `raster`, and `vegan`.
+
+```{r}
+library(algatr)
+```
+
+```{r, eval = FALSE}
+# Install required packages
+rda_packages()
+install.packages("geodata")
+```
+
+```{r, warning = FALSE, message = FALSE}
+library(dplyr)
+library(raster)
+library(vegan)
+library(geodata)
+library(vcfR)
+library(sf)
+```
+
+## Processing data
+
+The dataset we will be working with today is for two widespread montane bumble bee species, Bombus vosnesenskii and Bombus vancouverensis, from Jackson et al. (2020; https://doi.org/10.1111/mec.15376). In the original Jackson et al. study, they identified candidate loci associated with temperature and precipitation across the species' ranges and linked these loci to potential gene functions. We will be using the same dataset to demonstrate how to perform an RDA analysis. We will also use Genome Browser to explore genes related to the loci and infer potential gene functions.
+
+### Genetic data
+
+Running an RDA requires two data files for input: a genotype dosage matrix (the `gen` argument) and the environmental values extracted at sampling coordinates (the `env` argument). Let's first convert our vcf to a dosage matrix using the `vcf_to_dosage()` function.
+
+```{r gen data, warning = FALSE}
+# Load the vcf file for B. vosnesenskii
+vos_vcf <- read.vcfR("data/vos.vcf.gz")
+
+# Convert from vcf to dosage matrix:
+vos_gen <- vcf_to_dosage(vos_vcf)
+
+# Running RDA requires that your genotype matrix contains no missing values. We will perform a simple imputation based on the median.
+vos_gen <- simple_impute(vos_gen)
+```
+
+### Environmental data
+
+Now, let's get our environmental data. For our environmental data we will be using bioclimatic data from WorldClim (https://www.worldclim.org/). These variables provide summaries of temperature and precipitation. There are 19 bioclimatic variables in total, but we will only be using a subset of these variables for our analysis.
+
+The bioclimatic variables we will be using today are:
+1. Annual mean temperature (bio1)
+2. Annual precipitation (bio12)
+3. Isothermality (bio3)
+4. Max temperature of warmest month (bio5)
+5. Min temperature of coldest month (bio6)
+6. Precipitation of driest month (bio14)
+7. Precipitation of wettest month (bio13)
+   
+```{r}
+bio <- worldclim_global(var="bio", path=tempdir(), res = 2.5)
+
+# Subset out the variables we are interested in
+bio <- bio[[c(1, 12, 3, 5, 6, 14, 13)]]
+
+# Rename them to be more informative
+names(bio) <- c("Annual_Mean_Temperature", "Annual_Precipitation", "Isothermality", "Max_Temperature_of_Warmest_Month", "Min_Temperature_of_Coldest_Month", "Precipitation_of_Driest_Month", "Precipitation_of_Wettest_Month")
+
+# Plot our raster
+plot(bio)
+```
+
+Next, we can extract the environmental values at our sampling coordinates from our environmental rasters. We also need to standardize environmental variables. This is particularly important if we are using (for example) bioclimatic variables as input, as units of measurement are completely different (e.g., mm for precipitation vs. degrees Celsius for temperature). To do so, we'll use the `scale()` function.
+
+```{r enviro data}
+# Get coordinates
+vos_coords <-
+  read.csv("data/vos_coords.csv") %>%
+  # Transform into a spatial object
+  # crs = 4326 is the WGS84 coordinate system (latitude and longitude)
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+
+# Extract environmental vars
+vos_env <- raster::extract(bio, vos_coords, ID = FALSE)
+
+# Standardize environmental variables and make into dataframe
+vos_env <- scale(vos_env, center = TRUE, scale = TRUE)
+vos_env <- data.frame(vos_env)
+```
+
+## Running RDA
+
+Now let's run RDA using the genotype matrix and the environmental dataframe we created using the `rda_run()` function:
+```{r full model, warning = FALSE, message = FALSE}
+vos_mod <- rda_run(vos_gen, vos_env)
+```
+
+The resulting object is large, containing 12 elements relevant to the RDA. Let's take a look at what function was called. We can see that we have modeled gen (genotype) as a function (~) of our environmental variables.
+
+```{r mod call}
+vos_mod$call
+```
+
+## Identifying SNPs associated with environmental variables
+
+Now that we have the RDA model, we can discover outlier SNPs (our loci of interest) that have significant associations with our environmental variables.
+
+```{r cand snps}
+# We will test for significance at a p-value threshold of 0.01, to be more stringent, but you can adjust this threshold
+vos_outliers <- rda_getoutliers(vos_mod, sig = 0.05, plot = FALSE)
+
+# How many outlier SNPs were detected?
+length(vos_outliers$rda_snps)
+```
+
+## Visualizing results
+
+------------------------------------------------------------------------
+
+RDA results are often visualized using a **biplot**. These plots depict how our SNPs are associated with our environmental variables. In these plots, **points represent our SNPs** and arrows represent our environmental variables.  
+
+The direction of the arrows shows how environmental variables are associated with genetic variation. Arrows pointing in the same  direction are positively correlated environmental variables and those pointing in opposite directions are negatively correlated. Arrows perpindicular to each other are uncorrelated. 
+
+**If a SNPs is far along an environmental arrow's direction, that SNP is strongly associated with that environmental factor.** Our outlier SNPs are highlighted in orange; you can see that these SNPs fall far along the arrows representing our environmental variables.
+
+The axes of this plot, RDA1 and RDA2, can be thought of in the same way as PCA axes. They represent the axes of greatest genetic variation that are associated with our environmental variables.
+
+```{r biplot}
+rda_plot(vos_mod, vos_outliers$rda_snps, biplot_axes = c(1, 2), rdaplot = TRUE, manhattan = FALSE)
+```
+
+------------------------------------------------
+   **Use the plot above to answer Question 1**  
+------------------------------------------------
+
+Another common way that GEA results are visualized is using a **Manhattan plot**. The x-axis of this plot is the SNP and the y-axis is the p-value of each SNP. Note that the p-values are negative log transformed so that higher values on the y-axis = lower p-values. SNPs that are significantly associated with environmental variables will be above the significance threshold (indicated here with a dotted line).
+
+```{r Manhattan}
+rda_plot(vos_mod, vos_outliers$rda_snps, vos_outliers$pvalues, rdaplot = FALSE, manhattan = TRUE)
+```
+
+### Identifying environmental associations
+
+Now that we've identified outlier loci, we can identify which environmental variables they are correlated with. To do so, we can run a correlation test of each SNP. The correlation coefficient (r) is a measure of the correlation between the *dosage values of that SNP and the environmental values*; this means that if the correlation coefficient is positive, the alternative allele is associated with higher environmental values and the reference allele is associate with lower environmental values, and if it is negative, the reference allele is associated with higher environmental values and the alternative allele is associated with lower environmental values. The direction of the correlation is not very meaningful by itself, but keep it in mind to avoid misenterpreting the correlation results.
+
+```{r simple results}
+# Extract genotypes for outlier SNPs
+vos_snps <- vos_outliers$rda_snps
+rda_gen <- vos_gen[, vos_snps]
+
+# Run correlation test
+vos_cor <- rda_cor(rda_gen, vos_env)
+
+# Make a table from these results, ordered by the strength of the correlation:
+# Here, we only display the first 10 SNPs
+rda_table(vos_cor, order = TRUE, nrow = 10)
+
+# You can also plot the correlations for one variable at a time
+rda_table(vos_cor, order = TRUE, nrow = 10, var = "Annual_Mean_Temperature")
+```
+
+In the code chunk below, make a table for one of the other environmental variables (i.e., "Annual_Precipitation", "Isothermality", "Max_Temperature_of_Warmest_Month", "Min_Temperature_of_Coldest_Month", "Precipitation_of_Driest_Month", "Precipitation_of_Wettest_Month") by replacing `var = "Annual_Mean_Temperature"` in the code above with the variable of interest.
+```{r}
+
+```
+
+### Using Genome Browser to explore candidate loci
+
+The output of RDA by itself is not very informative; RDA only provides us with a list of SNP IDs that are significantly associated with environmental variables. To learn more about these SNPs, we can use the UCSC Genome Browser to explore the genes that these SNPs are located in.
+
+The genomic data used in this study was aligned to the reference genome for Bombus impatiens, a close relative of our study species. Follow the link below to oppen the UCSC Genome Browser for the Bombus impatiens genome:
+https://genome.ucsc.edu/cgi-bin/hgTracks?db=hub_2793425_GCF_000188095.3&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=NT_176521.1%3A1822030%2D1832030&hgsid=2371735563_SdPIpLrHfSt0skdzRwH0qi6m9NIu
+
+In the Genome Browser, you can search for the SNP IDs that you identified as outliers in the RDA analysis. You will have to slightly modify the SNP IDs to match the format used in the Genome Browser. For example, if the SNP ID is "NT_176521.1_514070", you would search for "NT_176521.1:514070" in the Genome Browser.
+
+Once you search for the SNP ID, the genome browser will show you the location of the SNP in the genome. You can then identify the genes that are located near the SNP. The NCBI RefSeq genes will be colored in blue. When you click on the gene, you will get a pop-up window with information about the gene; click on the link next to "Primary identifier for gene" and you will be taken to the NCBI page for that gene, which may give you more information about the gene's function.
+
+-------------------------------------------------------------------------------------------
+  **Use the genome browser and the SNPs we have identified above to answer Question 2**  
+-------------------------------------------------------------------------------------------
+
+## Run RDA on Bombus vancouverensis
+
+Now that we have run RDA on Bombus vosnesenskii, you can run RDA on Bombus vancouverensis. The data is read in for you below. Copy and paste the code from above to run RDA on Bombus vancouverensis.
+
+```{r}
+# Load the vcf file for B. vancouverensis
+van_vcf <- read.vcfR("data/van.vcf.gz")
+van_coords <- 
+  read.csv("data/van_coords.csv") %>%
+  st_as_sf(coords = c("lon", "lat"), crs = 4326)
+```
+
+Here are the steps you will need to follow:
+1. Convert the vcf to a dosage matrix (use the `vcf_to_dosage()` and `simple_impute()` functions)
+2. Extract the environmental variables at the sampling coordinates (use the `extract()` and `scale()` functions)
+3. Run RDA (use the `rda_run()` function)
+4. Identify outlier SNPs (use the `rda_getoutliers()` function)
+5. Visualize the results (use the `rda_plot()` function)
+6. Identify environmental associations (use the `rda_cor()` and `rda_table()` functions)
+
+```{r}
+# Convert from vcf to dosage matrix
+van_gen <- vcf_to_dosage(van_vcf)
+
+# Running RDA requires that your genotype matrix contains no missing values. We will perform a simple imputation based on the median.
+van_gen <- simple_impute(van_gen)
+
+# Extract environmental vars
+van_env <- raster::extract(bio, van_coords, ID = FALSE)
+
+# Standardize environmental variables and make into dataframe
+van_env <- scale(van_env, center = TRUE, scale = TRUE)
+
+# Run RDA
+van_mod <- rda_run(van_gen, van_env)
+
+# Identify outlier SNPs
+van_outliers <- rda_getoutliers(van_mod, sig = 0.05, plot = FALSE)
+
+# Visualize results
+rda_plot(van_mod, van_outliers$rda_snps, biplot_axes = c(1, 2), rdaplot = TRUE, manhattan = FALSE)
+
+# Identify environmental associations
+van_snps <- van_outliers$rda_snps
+
+# Extract genotypes for outlier SNPs
+rda_gen <- van_gen[, van_snps]
+
+# Run correlation test
+van_cor <- rda_cor(rda_gen, van_env)
+
+# Make a table from these results, ordered by the strength of the correlation:
+rda_table(van_cor, order = TRUE, nrow = 10)
+```
+---------------------------------------------
+  **Use your results to answer Question 3**  
+---------------------------------------------
+
+
+## Comparing results between species
+
+A major question in landscape genetics is whether similar sets of genes are associated with environmental adaptation across different species. This is important because it tells about the predictability and repeatiblity of evolution across the tree of life. Now, that you have run RDA on both Bombus vosnesenskii and Bombus vancouverensis, you can compare the results to see if the same loci are associated with climatic variables in both species.
+
+```{r}
+# Note: you will need to create the van_outliers object in your code above
+
+# Compare the outlier SNPs between the two species
+# The intersect() function will return the SNPs that are present in both species
+overlapping_snps <- intersect(vos_outliers$rda_snps, van_outliers$rda_snps)
+
+# Calculate how many SNPs are shared between the two species
+length(overlapping_snps)
+
+# The setdiff() function will return the SNPs that are present in one species but not the other
+nonoverlapping_snps <- setdiff(vos_outliers$rda_snps, van_outliers$rda_snps)
+
+# Calculate how many SNPs are unique to each species
+length(nonoverlapping_snps)
+```
+
+Use the Genome Browser to explore any SNPs that are shared between the two species.
+
+---------------------------------------------
+  **Use your results to answer Question 4**  
+---------------------------------------------
+
+## Documentation and citations
+
+------------------------------------------------------------------------
+
+|                         | Citation/URL                                                                                                                                                                            | Details                                                                                             |
+|-------------------|----------------------------|-------------------------|
+| Associated literature   | [Capblancq & Forester 2021](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.13722); [Github repository for code](https://github.com/Capblancq/RDA-landscape-genomics) | Paper describing RDA methodology; also provides walkthrough and description of `rdadapt()` function |
+| Associated literature   | [Capblancq et al. 2018](https://onlinelibrary.wiley.com/doi/abs/10.1111/1755-0998.12906)                                                                                                | Description of p-value method of detecting outlier loci                                             |
+| R package documentation | [Oksanen et al. 2022.](https://cran.r-project.org/web/packages/vegan/index.html)                                                                                                        | algatr uses the `rda()` and `ordiR2step()` functions in the vegan package                           |
+| Associated literature   | [Forester et al. 2018](https://onlinelibrary.wiley.com/doi/full/10.1111/mec.14584)                                                                                                      | Review of genotype-environment association methods                                                  |
+| Associated tutorial     | [Forester et al.](https://popgen.nescent.org/2018-03-27_RDA_GEA.html)                                                                                                                   | Walkthrough of performing an RDA with the Z-scores outlier detection method                         |
+| Associated vignette     | `vignette("intro-vegan")`                                                                                                                                                               | Introduction to ordination using the vegan package (including using the `rda()` function            |
+| Associated vignette     | `vignette("partitioning")`    
