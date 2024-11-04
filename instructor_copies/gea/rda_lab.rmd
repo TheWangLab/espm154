@@ -1,9 +1,7 @@
 ---
-title: "RDA"
+title: "Introduction to Genotype-Environment Association (GEA) analysis"
 author: "Anusha Bishop"
 ---
-
-# Introduction to Genotype-Environment Association (GEA) analysis
 
 Genotype-environment association (GEA) analysis is a powerful tool for identifying loci that may be driving local environemental adaptation. As the name suggest, GEA methods identify candidate loci based on significant associations between genotypes (i.e., allele dosages or frequencies) and environment variables (e.g., temperature). One popular method for GEA analysis is called redundancy analysis (RDA), which uses constrained ordination to detect loci. Constrained ordination works by combining linear regression (in which response variables are genotypes and  explanatory variables are environmental data) with ordination (a PCA). In this lab, we will walk through how to perform an RDA analysis using the `algatr` package in R and how to use Genome Browser to identify and research genes related to our candidate loci.
 
