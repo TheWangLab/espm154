@@ -36,6 +36,7 @@ library(vegan)
 library(geodata)
 library(vcfR)
 library(sf)
+library(ggplot2)
 ```
 
 ## Processing data
@@ -99,6 +100,15 @@ vos_env <- raster::extract(bio, vos_coords, ID = FALSE)
 # Standardize environmental variables and make into dataframe
 vos_env <- scale(vos_env, center = TRUE, scale = TRUE)
 vos_env <- data.frame(vos_env)
+
+# We can then plot our coordinates, colored by an environmental variable, to get a sense of the spatial scale of our data
+ggplot(vos_coords) +
+  borders("state", fill = "gray90") +
+  geom_sf(aes(col = vos_env$Annual_Precipitation), cex = 3, alpha = 0.5) +
+  scale_color_viridis_c() +
+  labs(col = "Annual Precipitation (scaled)") +
+  theme_void() +
+  coord_sf(xlim = c(-125, -117), ylim = c(36, 48))
 ```
 
 ## Running RDA
